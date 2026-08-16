@@ -1,0 +1,1275 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Saturn Expense & Purchase Tracker</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Alpine.js CDN for Reactive UI -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <!-- Chart.js for Visualizations -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    [x-cloak] { display: none !important; }
+
+    :root {
+      --bg: #080604;
+      --surface: #1A1612;
+      --border: #2A1F14;
+      --accent2: #8B6340;
+      --accent1: #C4956A;
+      --text2: #D4C4A8;
+      --text1: #E8D5B8;
+      --red: #C44A3A;
+      --green: #5A9E6A;
+      --yellow: #C4A43A;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text1);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    .saturn-card {
+      background-color: var(--surface);
+      border: 1px solid var(--border);
+    }
+
+    .saturn-input {
+      background-color: #0d0b09;
+      border: 1px solid var(--border);
+      color: var(--text1);
+    }
+    .saturn-input:focus {
+      outline: none;
+      border-color: var(--accent1);
+      box-shadow: 0 0 0 1px var(--accent1);
+    }
+
+    /* Tooltip styling */
+    .has-tooltip { position: relative; }
+    .tooltip-content {
+      visibility: hidden;
+      opacity: 0;
+      position: absolute;
+      bottom: 125%;
+      left: 50%;
+      transform: translateX(-50%);
+      transition: opacity 0.2s, visibility 0.2s;
+      z-index: 50;
+      width: 220px;
+      pointer-events: none;
+    }
+    .has-tooltip:hover .tooltip-content,
+    .has-tooltip:focus .tooltip-content,
+    .has-tooltip.active .tooltip-content {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    /* Print & PDF Export Styling */
+    @media print {
+      body {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        font-family: Arial, sans-serif;
+      }
+      .no-print { display: none !important; }
+      .print-only { display: block !important; }
+      
+      .print-container {
+        padding: 0;
+        margin: 0;
+        width: 100%;
+      }
+      
+      table.print-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+        font-size: 11pt;
+      }
+      
+      table.print-table th {
+        background-color: #f2f2f2 !important;
+        color: #000 !important;
+        border: 1px solid #ccc !important;
+        padding: 8px;
+        text-align: left;
+        font-weight: bold;
+      }
+      
+      table.print-table td {
+        border: 1px solid #ddd !important;
+        padding: 8px;
+        color: #000 !important;
+      }
+
+      .print-subtotal {
+        background-color: #fafafa !important;
+        font-weight: bold;
+      }
+
+      .print-header {
+        border-bottom: 2px solid #333;
+        padding-bottom: 15px;
+        margin-bottom: 20px;
+      }
+    }
+
+    .print-only { display: none; }
+  </style>
+</head>
+<body x-data="saturnApp()" x-init="initApp()" class="min-h-screen flex flex-col antialiased">
+
+  <!-- ==================== MAIN DASHBOARD UI ==================== -->
+  <div class="no-print flex-1 flex flex-col">
+    
+    <!-- Top Header Navigation -->
+    <header class="border-b border-[var(--border)] bg-[#0d0a08]/90 backdrop-blur sticky top-0 z-30 px-4 py-3">
+      <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+        
+        <!-- Logo & Title -->
+        <div class="flex items-center space-x-3">
+          <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-[var(--accent2)] via-[var(--accent1)] to-[var(--text2)] p-0.5 flex items-center justify-center shadow-lg shadow-[var(--accent2)]/20">
+            <div class="w-full h-full bg-[#080604] rounded-full flex items-center justify-center">
+              <i data-lucide="orbit" class="w-5 h-5 text-[var(--accent1)]"></i>
+            </div>
+          </div>
+          <div>
+            <h1 class="text-lg font-bold tracking-tight text-[var(--text1)] leading-none">SATURN</h1>
+            <p class="text-xs text-[var(--accent2)] font-mono tracking-widest uppercase">Purchase & Expense Tracker</p>
+          </div>
+        </div>
+
+        <!-- Right Quick Actions -->
+        <div class="flex flex-wrap items-center gap-2 sm:gap-3 text-sm">
+          
+          <!-- GitHub Pull Button -->
+          <button @click="pullFromGithub()" :disabled="syncingGithub" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] hover:border-[var(--accent1)] transition text-xs font-mono text-[var(--text1)]" title="Pull latest data from GitHub">
+            <i data-lucide="download-cloud" class="w-3.5 h-3.5 text-[var(--accent1)]"></i>
+            <span>Pull</span>
+          </button>
+
+          <!-- GitHub Push Button -->
+          <button @click="pushToGithub()" :disabled="syncingGithub" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] hover:border-[var(--accent1)] transition text-xs font-mono text-[var(--text1)]" title="Push local data to GitHub">
+            <i data-lucide="upload-cloud" class="w-3.5 h-3.5 text-[var(--green)]"></i>
+            <span>Push</span>
+          </button>
+
+          <!-- GitHub Settings Modal Toggle -->
+          <button @click="showGithubModal = true" class="p-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] hover:border-[var(--accent1)] transition text-[var(--text2)]" title="GitHub API Settings">
+            <i data-lucide="github" class="w-4 h-4"></i>
+          </button>
+
+          <!-- Currency Settings Button -->
+          <button @click="showCurrencyModal = true" class="flex items-center space-x-1 px-3 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] hover:border-[var(--accent1)] transition text-xs font-mono">
+            <i data-lucide="coins" class="w-3.5 h-3.5 text-[var(--accent1)]"></i>
+            <span class="text-[var(--text1)] font-bold" x-text="displayCurrency"></span>
+          </button>
+
+          <!-- Add Purchase CTA -->
+          <button @click="openAddModal()" class="flex items-center space-x-1.5 px-4 py-1.5 rounded-lg bg-gradient-to-r from-[var(--accent2)] to-[var(--accent1)] hover:opacity-90 text-[#080604] font-semibold text-xs tracking-wider uppercase transition shadow-md">
+            <i data-lucide="plus" class="w-4 h-4 stroke-[3]"></i>
+            <span>Add Purchase</span>
+          </button>
+        </div>
+
+      </div>
+    </header>
+
+    <!-- Global Notification Banner -->
+    <div x-show="syncStatus" x-transition class="bg-[#1a140e] border-b border-[var(--accent1)]/30 px-4 py-2 text-center text-xs font-mono text-[var(--accent1)] flex items-center justify-center space-x-2" x-cloak>
+      <i data-lucide="info" class="w-4 h-4"></i>
+      <span x-text="syncStatus"></span>
+    </div>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
+
+      <!-- Top Summary Dashboard Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        <!-- Total Spent Card -->
+        <div class="saturn-card rounded-xl p-5 relative overflow-hidden">
+          <div class="absolute -right-4 -bottom-4 opacity-5 pointer-events-none">
+            <i data-lucide="wallet" class="w-32 h-32 text-[var(--text1)]"></i>
+          </div>
+          <p class="text-xs uppercase font-mono tracking-widest text-[var(--accent2)] mb-1">Global Total Spent</p>
+          <div class="text-2xl sm:text-3xl font-extrabold text-[var(--text1)] tracking-tight">
+            <span x-text="formatCurrency(calculateGlobalTotalSpent(), displayCurrency)"></span>
+          </div>
+          <p class="text-xs text-[var(--text2)] mt-2 font-mono">
+            All <span class="text-[var(--accent1)] font-bold" x-text="purchases.length"></span> purchases recorded
+          </p>
+        </div>
+
+        <!-- Filtered Total Card -->
+        <div class="saturn-card rounded-xl p-5">
+          <p class="text-xs uppercase font-mono tracking-widest text-[var(--accent2)] mb-1">Filtered Results Total</p>
+          <div class="text-2xl sm:text-3xl font-extrabold text-[var(--accent1)] tracking-tight">
+            <span x-text="formatCurrency(calculateFilteredTotalSpent(), displayCurrency)"></span>
+          </div>
+          <p class="text-xs text-[var(--text2)] mt-2 font-mono">
+            Showing <span x-text="filteredPurchases.length" class="text-white font-bold"></span> matched items
+          </p>
+        </div>
+
+        <!-- Top Category -->
+        <div class="saturn-card rounded-xl p-5">
+          <p class="text-xs uppercase font-mono tracking-widest text-[var(--accent2)] mb-1">Top Category</p>
+          <div class="text-lg font-bold text-[var(--text1)] truncate" x-text="getTopCategory().name"></div>
+          <div class="text-xs text-[var(--accent1)] font-mono mt-1" x-text="formatCurrency(getTopCategory().total, displayCurrency)"></div>
+        </div>
+
+        <!-- Rates Summary -->
+        <div class="saturn-card rounded-xl p-5">
+          <div class="flex justify-between items-center mb-1">
+            <p class="text-xs uppercase font-mono tracking-widest text-[var(--accent2)]">Exchange Rates</p>
+            <button @click="showCurrencyModal = true" class="text-[10px] text-[var(--accent1)] underline font-mono">Edit</button>
+          </div>
+          <div class="text-xs space-y-1 font-mono text-[var(--text2)] mt-2">
+            <div>1 USD = <span class="text-[var(--text1)] font-bold" x-text="exchangeRates.USD + ' DZD'"></span></div>
+            <div>1 EUR = <span class="text-[var(--text1)] font-bold" x-text="exchangeRates.EUR + ' DZD'"></span></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Category Guide / Tooltips Interactive Bar -->
+      <div class="saturn-card rounded-xl p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-xs font-mono uppercase tracking-widest text-[var(--accent1)] flex items-center gap-2">
+            <i data-lucide="help-circle" class="w-3.5 h-3.5"></i> Category Reference & Tooltips
+          </h2>
+          <span class="text-[10px] text-[var(--text2)] font-mono hidden sm:inline">Hover or tap category badges to filter</span>
+        </div>
+        
+        <div class="flex flex-wrap gap-2">
+          <template x-for="(desc, cat) in categoryDescriptions" :key="cat">
+            <div 
+              class="has-tooltip bg-[#0d0b09] border border-[var(--border)] hover:border-[var(--accent2)] px-2.5 py-1 rounded-md text-xs font-medium text-[var(--text2)] cursor-pointer transition flex items-center space-x-1.5"
+              @click="selectedCategory = (selectedCategory === cat ? 'ALL' : cat)"
+              :class="selectedCategory === cat ? 'border-[var(--accent1)] text-white bg-[#1a140d]' : ''"
+            >
+              <span class="w-1.5 h-1.5 rounded-full" :style="'background-color:' + (categoryColors[cat] || '#666666')"></span>
+              <span x-text="cat"></span>
+              
+              <!-- Tooltip Popup -->
+              <div class="tooltip-content saturn-card p-2.5 rounded-lg shadow-2xl text-left border border-[var(--accent2)]">
+                <p class="font-bold text-xs text-[var(--accent1)] mb-1" x-text="cat"></p>
+                <p class="text-[11px] text-[var(--text2)] leading-normal" x-text="desc"></p>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <!-- Controls: Search, Filter, Sort, & Export -->
+      <div class="saturn-card rounded-xl p-4 space-y-4">
+        <div class="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+          
+          <!-- Instant Search Input -->
+          <div class="relative flex-1">
+            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text2)]"></i>
+            <input 
+              type="text" 
+              x-model="searchQuery" 
+              placeholder="Instant search by item, store, category, or notes..." 
+              class="w-full pl-9 pr-8 py-2 saturn-input rounded-lg text-sm"
+            >
+            <button x-show="searchQuery" @click="searchQuery=''" class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[var(--text2)] hover:text-white" x-cloak>✕</button>
+          </div>
+
+          <!-- Category Filter & Sort Dropdowns -->
+          <div class="flex flex-wrap items-center gap-2">
+            
+            <!-- Category Filter -->
+            <select x-model="selectedCategory" class="saturn-input px-3 py-2 rounded-lg text-xs font-mono">
+              <option value="ALL">All Categories</option>
+              <template x-for="cat in categories" :key="cat">
+                <option :value="cat" x-text="cat"></option>
+              </template>
+            </select>
+
+            <!-- Sort By -->
+            <select x-model="sortBy" class="saturn-input px-3 py-2 rounded-lg text-xs font-mono">
+              <option value="date-desc">Newest First</option>
+              <option value="date-asc">Oldest First</option>
+              <option value="price-desc">Highest Cost</option>
+              <option value="price-asc">Lowest Cost</option>
+            </select>
+
+            <!-- Export Buttons -->
+            <div class="flex items-center space-x-1 border-l border-[var(--border)] pl-2 ml-1">
+              <button @click="exportCSV()" title="Export CSV" class="p-2 rounded-lg bg-[var(--surface)] hover:bg-[#251f19] border border-[var(--border)] text-[var(--text1)] text-xs font-mono flex items-center space-x-1">
+                <i data-lucide="file-spreadsheet" class="w-4 h-4 text-[var(--green)]"></i>
+                <span class="hidden sm:inline">CSV</span>
+              </button>
+              
+              <button @click="triggerPrintReport()" title="Print Expense Report" class="p-2 rounded-lg bg-[var(--surface)] hover:bg-[#251f19] border border-[var(--border)] text-[var(--text1)] text-xs font-mono flex items-center space-x-1">
+                <i data-lucide="printer" class="w-4 h-4 text-[var(--accent1)]"></i>
+                <span class="hidden sm:inline">Print / PDF</span>
+              </button>
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Main Layout Grid: Spending Visuals & Purchase Table -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Category Breakdown Chart (1 Col) -->
+        <div class="saturn-card rounded-xl p-5 flex flex-col justify-between">
+          <div>
+            <h3 class="text-xs font-mono uppercase tracking-widest text-[var(--accent1)] mb-4 flex items-center gap-2">
+              <i data-lucide="pie-chart" class="w-4 h-4"></i> Spending by Category
+            </h3>
+            <div class="relative w-full h-64 flex items-center justify-center">
+              <canvas id="categoryChart"></canvas>
+            </div>
+          </div>
+          <div class="mt-4 pt-3 border-t border-[var(--border)] text-center">
+            <p class="text-[11px] font-mono text-[var(--text2)]">Calculated live in <span class="text-[var(--accent1)] font-bold" x-text="displayCurrency"></span></p>
+          </div>
+        </div>
+
+        <!-- Purchases List & Table (2 Cols) -->
+        <div class="lg:col-span-2 space-y-4">
+          
+          <div class="saturn-card rounded-xl overflow-hidden">
+            <div class="p-4 border-b border-[var(--border)] flex justify-between items-center bg-[#13100d]">
+              <h3 class="text-xs font-mono uppercase tracking-widest text-[var(--accent1)] flex items-center gap-2">
+                <i data-lucide="list" class="w-4 h-4"></i> Recorded Purchases (<span x-text="filteredPurchases.length"></span>)
+              </h3>
+            </div>
+
+            <!-- Mobile Card View -->
+            <div class="block md:hidden divide-y divide-[var(--border)]">
+              <template x-for="item in filteredPurchases" :key="item.id">
+                <div class="p-4 space-y-3">
+                  <div class="flex items-start justify-between">
+                    <div class="flex items-center space-x-3">
+                      <template x-if="item.image">
+                        <img :src="item.image" class="w-12 h-12 object-cover rounded-md border border-[var(--border)] cursor-pointer" @click="viewImageModal = item.image">
+                      </template>
+                      <div>
+                        <h4 class="font-bold text-sm text-[var(--text1)]" x-text="item.name"></h4>
+                        <div class="flex items-center space-x-2 text-xs text-[var(--text2)] mt-0.5">
+                          <span class="px-2 py-0.5 rounded text-[10px] font-mono border" :style="'border-color:' + (categoryColors[item.category] || '#666666') + '; color:' + (categoryColors[item.category] || '#666666')" x-text="item.category"></span>
+                          <span x-text="item.store || 'Unknown Seller'"></span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="text-right">
+                      <div class="font-bold text-sm text-[var(--text1)]" x-text="formatCurrency(convertAmount(item.pricePerUnit * item.quantity, item.originalCurrency, displayCurrency), displayCurrency)"></div>
+                      <div class="text-[10px] font-mono text-[var(--text2)]" x-text="item.quantity + 'x @ ' + item.pricePerUnit + ' ' + item.originalCurrency"></div>
+                    </div>
+                  </div>
+
+                  <!-- Mobile Actions -->
+                  <div class="flex items-center justify-between text-xs text-[var(--text2)] pt-2 border-t border-[var(--border)]/60 font-mono">
+                    <span x-text="item.date"></span>
+                    <div class="flex items-center space-x-2">
+                      <template x-if="item.url">
+                        <a :href="item.url" target="_blank" class="px-2 py-1 rounded bg-[var(--surface)] border border-[var(--border)] text-[var(--accent1)] hover:underline flex items-center space-x-1">
+                          <i data-lucide="external-link" class="w-3 h-3"></i>
+                          <span>Link</span>
+                        </a>
+                      </template>
+                      <button @click="openEditModal(item)" class="px-2.5 py-1 rounded bg-[#2a2218] border border-[var(--accent2)] text-[var(--text1)] hover:bg-[var(--accent2)] transition flex items-center space-x-1">
+                        <i data-lucide="edit-3" class="w-3 h-3"></i>
+                        <span>Edit</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </template>
+              <div x-show="filteredPurchases.length === 0" class="p-8 text-center text-xs font-mono text-[var(--text2)]" x-cloak>
+                No purchases match your search criteria.
+              </div>
+            </div>
+
+            <!-- Desktop Table View (No Scrollbar / No Slider) -->
+            <div class="hidden md:block w-full">
+              <table class="w-full table-fixed text-left text-xs">
+                <thead class="bg-[#0f0c0a] text-[var(--text2)] font-mono uppercase tracking-wider border-b border-[var(--border)]">
+                  <tr>
+                    <th class="p-3 w-2/5">Item</th>
+                    <th class="p-3 w-28">Category</th>
+                    <th class="p-3 w-24">Store</th>
+                    <th class="p-3 w-12 text-center">Qty</th>
+                    <th class="p-3 w-28">Orig. Price</th>
+                    <th class="p-3 w-28 text-right">Converted</th>
+                    <th class="p-3 w-20 text-center">Action</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-[var(--border)] font-sans">
+                  <template x-for="item in filteredPurchases" :key="item.id">
+                    <tr class="hover:bg-[#201b16]/50 transition">
+                      
+                      <!-- Item & Image -->
+                      <td class="p-3 truncate">
+                        <div class="flex items-center space-x-2 overflow-hidden">
+                          <template x-if="item.image">
+                            <img :src="item.image" class="w-8 h-8 object-cover rounded border border-[var(--border)] cursor-pointer flex-shrink-0" @click="viewImageModal = item.image">
+                          </template>
+                          <div class="min-w-0">
+                            <div class="font-semibold text-xs text-[var(--text1)] truncate" x-text="item.name"></div>
+                            <div class="text-[10px] text-[var(--text2)] truncate" x-text="item.notes || item.date"></div>
+                          </div>
+                        </div>
+                      </td>
+
+                      <!-- Category Badge -->
+                      <td class="p-3">
+                        <span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-mono border truncate max-w-full" :style="'border-color:' + (categoryColors[item.category] || '#666666') + '; color:' + (categoryColors[item.category] || '#666666')" x-text="item.category"></span>
+                      </td>
+
+                      <!-- Store -->
+                      <td class="p-3 text-[var(--text2)] truncate" x-text="item.store || '—'"></td>
+
+                      <!-- Qty -->
+                      <td class="p-3 font-mono text-[var(--text1)] text-center" x-text="item.quantity"></td>
+
+                      <!-- Original Price -->
+                      <td class="p-3 font-mono text-[var(--text2)] truncate">
+                        <span x-text="item.pricePerUnit + ' ' + item.originalCurrency"></span>
+                      </td>
+
+                      <!-- Converted Total -->
+                      <td class="p-3 text-right font-mono font-bold text-[var(--text1)] truncate">
+                        <span x-text="formatCurrency(convertAmount(item.pricePerUnit * item.quantity, item.originalCurrency, displayCurrency), displayCurrency)"></span>
+                      </td>
+
+                      <!-- Actions -->
+                      <td class="p-3 text-center">
+                        <div class="flex items-center justify-center space-x-1">
+                          <template x-if="item.url">
+                            <a :href="item.url" target="_blank" title="Product Link" class="p-1 rounded bg-[var(--surface)] border border-[var(--border)] text-[var(--accent1)] hover:border-[var(--accent1)]">
+                              <i data-lucide="external-link" class="w-3 h-3"></i>
+                            </a>
+                          </template>
+                          <button @click="openEditModal(item)" title="Edit Item" class="px-2 py-1 rounded bg-[#2a2218] border border-[var(--accent2)] text-[var(--text1)] hover:bg-[var(--accent1)] hover:text-black transition flex items-center font-mono text-[10px]">
+                            <i data-lucide="edit-3" class="w-3 h-3"></i>
+                          </button>
+                        </div>
+                      </td>
+
+                    </tr>
+                  </template>
+
+                  <tr x-show="filteredPurchases.length === 0" x-cloak>
+                    <td colspan="7" class="p-8 text-center text-xs font-mono text-[var(--text2)]">
+                      No purchases found matching search criteria.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ==================== DEDICATED PRINT / PDF TEMPLATE ==================== -->
+  <div class="print-only print-container p-6">
+    <div class="print-header flex justify-between items-start">
+      <div>
+        <h1 class="text-2xl font-bold uppercase tracking-wider">EXPENSE REPORT</h1>
+        <p class="text-xs text-gray-600">Generated via Saturn Purchase Tracker</p>
+      </div>
+      <div class="text-right text-xs">
+        <p><strong>Date:</strong> <span x-text="new Date().toLocaleDateString()"></span></p>
+        <p><strong>Display Currency:</strong> <span x-text="displayCurrency"></span></p>
+        <p><strong>Rates:</strong> 1 USD=<span x-text="exchangeRates.USD"></span> DZD | 1 EUR=<span x-text="exchangeRates.EUR"></span> DZD</p>
+      </div>
+    </div>
+
+    <!-- Expense Table -->
+    <table class="print-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Item Name</th>
+          <th>Category</th>
+          <th>Store</th>
+          <th>Qty</th>
+          <th>Orig. Cost</th>
+          <th style="text-align: right;">Converted Total (<span x-text="displayCurrency"></span>)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <template x-for="item in filteredPurchases" :key="item.id">
+          <tr>
+            <td x-text="item.date"></td>
+            <td x-text="item.name"></td>
+            <td x-text="item.category"></td>
+            <td x-text="item.store || '—'"></td>
+            <td x-text="item.quantity"></td>
+            <td x-text="item.pricePerUnit + ' ' + item.originalCurrency"></td>
+            <td style="text-align: right; font-weight: bold;" x-text="formatCurrency(convertAmount(item.pricePerUnit * item.quantity, item.originalCurrency, displayCurrency), displayCurrency)"></td>
+          </tr>
+        </template>
+        <tr class="print-subtotal">
+          <td colspan="6" style="text-align: right; font-weight: bold;">TOTAL:</td>
+          <td style="text-align: right; font-weight: bold;" x-text="formatCurrency(calculateFilteredTotalSpent(), displayCurrency)"></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+
+  <!-- ==================== MODALS ==================== -->
+
+  <!-- Add / Edit Purchase Modal -->
+  <div x-show="showPurchaseModal" class="no-print fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" x-cloak>
+    <div @click.away="showPurchaseModal = false" class="saturn-card rounded-xl max-w-xl w-full p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center border-b border-[var(--border)] pb-3">
+        <h3 class="font-bold text-sm uppercase tracking-wider text-[var(--accent1)]" x-text="isEditing ? 'Edit Purchase Entry' : 'Record New Purchase'"></h3>
+        <button @click="showPurchaseModal = false" class="text-[var(--text2)] hover:text-white">✕</button>
+      </div>
+
+      <form @submit.prevent="savePurchase()" class="space-y-3 text-xs">
+        
+        <div>
+          <label class="block font-mono text-[var(--text2)] mb-1">Item Name *</label>
+          <input type="text" x-model="form.name" required placeholder="e.g., Raspberry Pi Zero 2 W" class="w-full p-2.5 saturn-input rounded-lg">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block font-mono text-[var(--text2)] mb-1">Category *</label>
+            <select x-model="form.category" required class="w-full p-2.5 saturn-input rounded-lg font-mono">
+              <template x-for="cat in categories" :key="cat">
+                <option :value="cat" x-text="cat"></option>
+              </template>
+            </select>
+          </div>
+          <div>
+            <label class="block font-mono text-[var(--text2)] mb-1">Store / Seller</label>
+            <input type="text" x-model="form.store" placeholder="e.g., AliExpress, Amazon, Local shop" class="w-full p-2.5 saturn-input rounded-lg">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block font-mono text-[var(--text2)] mb-1">Quantity *</label>
+            <input type="number" step="1" min="1" x-model.number="form.quantity" required class="w-full p-2.5 saturn-input rounded-lg font-mono">
+          </div>
+          <div>
+            <label class="block font-mono text-[var(--text2)] mb-1">Price per Unit *</label>
+            <input type="number" step="0.01" min="0" x-model.number="form.pricePerUnit" required class="w-full p-2.5 saturn-input rounded-lg font-mono">
+          </div>
+          <div>
+            <label class="block font-mono text-[var(--text2)] mb-1">Original Currency *</label>
+            <select x-model="form.originalCurrency" required class="w-full p-2.5 saturn-input rounded-lg font-mono">
+              <option value="DZD">DZD</option>
+              <option value="USD">USD ($)</option>
+              <option value="EUR">EUR (€)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Calculated Live Preview -->
+        <div class="p-3 bg-[#0d0a08] rounded-lg border border-[var(--border)] flex justify-between items-center font-mono text-[11px]">
+          <span class="text-[var(--text2)]">Item Total (Original):</span>
+          <span class="font-bold text-[var(--text1)]" x-text="(form.quantity * form.pricePerUnit || 0) + ' ' + form.originalCurrency"></span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block font-mono text-[var(--text2)] mb-1">Purchase Date *</label>
+            <input type="date" x-model="form.date" required class="w-full p-2.5 saturn-input rounded-lg font-mono">
+          </div>
+          <div>
+            <label class="block font-mono text-[var(--text2)] mb-1">Product URL</label>
+            <input type="url" x-model="form.url" placeholder="https://..." class="w-full p-2.5 saturn-input rounded-lg">
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-mono text-[var(--text2)] mb-1">Product Image / Receipt (Upload or File URL)</label>
+          <div class="flex gap-2">
+            <input type="text" x-model="form.image" placeholder="Image URL or upload file..." class="flex-1 p-2.5 saturn-input rounded-lg">
+            <label class="px-3 py-2 bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--accent1)] rounded-lg cursor-pointer text-xs flex items-center font-mono text-[var(--text2)]">
+              Upload
+              <input type="file" accept="image/*" class="hidden" @change="handleFileUpload($event)">
+            </label>
+          </div>
+          <template x-if="form.image">
+            <img :src="form.image" class="mt-2 h-20 rounded border border-[var(--border)] object-cover">
+          </template>
+        </div>
+
+        <div>
+          <label class="block font-mono text-[var(--text2)] mb-1">Notes</label>
+          <textarea x-model="form.notes" rows="2" placeholder="Part numbers, specifications, project intended for..." class="w-full p-2.5 saturn-input rounded-lg"></textarea>
+        </div>
+
+        <!-- Panel Toggle Switch Options -->
+        <div class="p-3 bg-[#0d0a08] rounded-lg border border-[var(--border)] flex items-center justify-between">
+          <div class="space-y-0.5">
+            <span class="block text-xs font-mono font-bold text-[var(--text1)]">Keep panel open after saving</span>
+            <span class="block text-[10px] text-[var(--text2)]">Allows fast entry of multiple purchases consecutively</span>
+          </div>
+          <button type="button" 
+                  @click="keepPanelOpen = !keepPanelOpen" 
+                  class="relative inline-flex h-5 w-10 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
+                  :class="keepPanelOpen ? 'bg-[var(--accent1)]' : 'bg-zinc-700'">
+            <span class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-black shadow ring-0 transition duration-200 ease-in-out"
+                  :class="keepPanelOpen ? 'translate-x-5' : 'translate-x-0'"></span>
+          </button>
+        </div>
+
+        <!-- Footer Modal Buttons -->
+        <div class="flex items-center justify-between pt-3 border-t border-[var(--border)]">
+          <div>
+            <template x-if="isEditing">
+              <button type="button" @click="deletePurchase(form.id)" class="px-3 py-2 rounded-lg bg-[#2e1512] border border-[var(--red)] text-[var(--red)] hover:bg-[var(--red)] hover:text-white transition font-mono flex items-center space-x-1">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                <span>Delete</span>
+              </button>
+            </template>
+          </div>
+
+          <div class="flex space-x-2">
+            <button type="button" @click="showPurchaseModal = false" class="px-4 py-2 rounded-lg bg-[var(--surface)] text-[var(--text2)] font-mono">Cancel</button>
+            <button type="submit" class="px-5 py-2 rounded-lg bg-gradient-to-r from-[var(--accent2)] to-[var(--accent1)] text-[#080604] font-bold uppercase font-mono tracking-wider" x-text="isEditing ? 'Update Purchase' : 'Save Purchase'"></button>
+          </div>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- GitHub Sync Settings Modal -->
+  <div x-show="showGithubModal" class="no-print fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" x-cloak>
+    <div @click.away="showGithubModal = false" class="saturn-card rounded-xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+      <div class="flex justify-between items-center border-b border-[var(--border)] pb-3">
+        <h3 class="font-bold text-sm uppercase tracking-wider text-[var(--accent1)] flex items-center gap-2">
+          <i data-lucide="github" class="w-4 h-4"></i> GitHub Sync Integration
+        </h3>
+        <button @click="showGithubModal = false" class="text-[var(--text2)] hover:text-white">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <p class="text-[var(--text2)] leading-relaxed">
+          Push and Pull purchase data via GitHub Gist. Generate a Personal Access Token (PAT) with <code class="text-[var(--accent1)]">gist</code> scope.
+        </p>
+
+        <div class="space-y-3 font-mono">
+          <div>
+            <label class="block text-[var(--text2)] mb-1">GitHub Access Token (PAT)</label>
+            <input type="password" x-model="githubToken" placeholder="ghp_xxxxxxxxxxxx" class="w-full p-2.5 saturn-input rounded-lg">
+          </div>
+
+          <div>
+            <label class="block text-[var(--text2)] mb-1">Gist ID (Auto-generated on first Push)</label>
+            <input type="text" x-model="githubGistId" placeholder="e.g. 8f1d8c..." class="w-full p-2.5 saturn-input rounded-lg">
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between pt-2 border-t border-[var(--border)]">
+          <button @click="saveGithubSettings(); showGithubModal = false;" class="px-4 py-2 bg-[var(--surface)] text-[var(--text1)] border border-[var(--border)] rounded-lg font-mono">Save Credentials</button>
+          <div class="flex space-x-2">
+            <button @click="pullFromGithub()" class="px-3 py-2 bg-[var(--accent2)] text-white font-bold rounded-lg font-mono">Pull Now</button>
+            <button @click="pushToGithub()" class="px-3 py-2 bg-[var(--green)] text-black font-bold rounded-lg font-mono">Push Now</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Currency Exchange Settings Modal -->
+  <div x-show="showCurrencyModal" class="no-print fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" x-cloak>
+    <div @click.away="showCurrencyModal = false" class="saturn-card rounded-xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+      <div class="flex justify-between items-center border-b border-[var(--border)] pb-3">
+        <h3 class="font-bold text-sm uppercase tracking-wider text-[var(--accent1)]">Currency & Exchange Rates</h3>
+        <button @click="showCurrencyModal = false" class="text-[var(--text2)] hover:text-white">✕</button>
+      </div>
+
+      <div class="space-y-4 text-xs font-mono">
+        <div>
+          <label class="block text-[var(--text2)] mb-1">Active Display Currency</label>
+          <select x-model="displayCurrency" @change="saveLocalSettings()" class="w-full p-2.5 saturn-input rounded-lg font-bold">
+            <option value="DZD">DZD (Algerian Dinar)</option>
+            <option value="USD">USD ($ United States Dollar)</option>
+            <option value="EUR">EUR (€ Euro)</option>
+          </select>
+        </div>
+
+        <div class="p-3 bg-[#0d0a08] border border-[var(--border)] rounded-lg space-y-3">
+          <p class="text-[11px] text-[var(--accent1)]">Manual Exchange Rates (to DZD):</p>
+          
+          <div>
+            <label class="block text-[var(--text2)] mb-1">1 USD = ? DZD</label>
+            <input type="number" step="0.1" x-model.number="exchangeRates.USD" @input="saveLocalSettings()" class="w-full p-2 saturn-input rounded-lg">
+          </div>
+
+          <div>
+            <label class="block text-[var(--text2)] mb-1">1 EUR = ? DZD</label>
+            <input type="number" step="0.1" x-model.number="exchangeRates.EUR" @input="saveLocalSettings()" class="w-full p-2 saturn-input rounded-lg">
+          </div>
+        </div>
+
+        <p class="text-[10px] text-[var(--text2)] leading-relaxed">
+          * Original purchase prices remain strictly preserved. Conversion pipeline: <code class="text-[var(--accent1)]">Original → DZD → Display Currency</code>.
+        </p>
+
+        <div class="flex justify-end pt-2">
+          <button @click="showCurrencyModal = false" class="px-5 py-2 bg-[var(--accent1)] text-[#080604] font-bold rounded-lg uppercase">Done</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Image Lightbox Modal -->
+  <div x-show="viewImageModal" class="no-print fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm" x-cloak @click="viewImageModal = null">
+    <div class="relative max-w-3xl w-full">
+      <img :src="viewImageModal" class="w-full max-h-[85vh] object-contain rounded-xl border border-[var(--border)]">
+      <p class="text-center text-xs text-[var(--text2)] font-mono mt-2">Click anywhere to close</p>
+    </div>
+  </div>
+
+
+  <!-- ==================== JAVASCRIPT LOGIC ==================== -->
+  <script>
+    function saturnApp() {
+      return {
+        // App State
+        purchases: [],
+        searchQuery: '',
+        selectedCategory: 'ALL',
+        sortBy: 'date-desc',
+        displayCurrency: 'DZD',
+        
+        // Exchange Rates to DZD
+        exchangeRates: {
+          DZD: 1,
+          USD: 220,
+          EUR: 238
+        },
+
+        // GitHub Credentials & State
+        githubToken: '',
+        githubGistId: '',
+        syncingGithub: false,
+        syncStatus: '',
+
+        // Panel Switch behavior state
+        keepPanelOpen: false,
+
+        // Categories & Palette
+        categories: [
+          'Electronics', 'Mechanical', '3D Printing', 'Tools', 'Electrical', 
+          'Components', 'Computing', 'Hardware', 'Consumables', 'Shipping', 
+          'Services', 'Other'
+        ],
+
+        categoryColors: {
+          'Electronics': '#C4956A',
+          'Mechanical': '#8B6340',
+          '3D Printing': '#5A9E6A',
+          'Tools': '#C4A43A',
+          'Electrical': '#C44A3A',
+          'Components': '#D4C4A8',
+          'Computing': '#3A82C4',
+          'Hardware': '#7A6AC4',
+          'Consumables': '#C46A9E',
+          'Shipping': '#6AC4B8',
+          'Services': '#9EC45A',
+          'Other': '#666666'
+        },
+
+        categoryDescriptions: {
+          'Electronics': 'Arduino, ESP32, Raspberry Pi, sensors, PCBs, microcontrollers',
+          'Mechanical': 'Screws, bearings, linear rods, gears, brackets, shafts',
+          '3D Printing': 'Filament, nozzles, hotends, heatbeds, PTFE tubes',
+          'Tools': 'Soldering irons, multimeters, wire cutters, screwdrivers',
+          'Electrical': 'Wires, connectors, switches, fuses, power supplies',
+          'Components': 'Resistors, capacitors, LEDs, diodes, transistors, ICs',
+          'Computing': 'Displays, SD cards, USB modules, cooling fans',
+          'Hardware': 'Nuts, bolts, washers, standoffs, fasteners',
+          'Consumables': 'Solder wire, heat-shrink, kapton tape, glue',
+          'Shipping': 'Delivery, import customs, and transport fees',
+          'Services': 'Machining, laser cutting, custom PCB manufacturing',
+          'Other': 'General items not fitting listed categories'
+        },
+
+        // Modals
+        showPurchaseModal: false,
+        showCurrencyModal: false,
+        showGithubModal: false,
+        viewImageModal: null,
+        isEditing: false,
+
+        // Form State
+        form: {
+          id: null,
+          name: '',
+          category: 'Electronics',
+          quantity: 1,
+          pricePerUnit: 0,
+          originalCurrency: 'DZD',
+          store: '',
+          date: new Date().toISOString().slice(0, 10),
+          url: '',
+          image: '',
+          notes: ''
+        },
+
+        chartInstance: null,
+
+        // Helper to safely re-render icons
+        renderIcons() {
+          this.$nextTick(() => {
+            if (window.lucide && typeof window.lucide.createIcons === 'function') {
+              window.lucide.createIcons();
+            }
+          });
+        },
+
+        // INIT APPLICATION
+        initApp() {
+          this.loadLocalSettings();
+          this.loadLocalPurchases();
+          this.initChart();
+          this.renderIcons();
+        },
+
+        // LOCAL STORAGE - AUTO SAVE & LOAD
+        loadLocalSettings() {
+          const savedRates = localStorage.getItem('saturn_rates');
+          if (savedRates) this.exchangeRates = JSON.parse(savedRates);
+
+          const savedCurr = localStorage.getItem('saturn_currency');
+          if (savedCurr) this.displayCurrency = savedCurr;
+
+          this.githubToken = localStorage.getItem('saturn_gh_token') || '';
+          this.githubGistId = localStorage.getItem('saturn_gh_gist_id') || '';
+        },
+
+        saveLocalSettings() {
+          localStorage.setItem('saturn_rates', JSON.stringify(this.exchangeRates));
+          localStorage.setItem('saturn_currency', this.displayCurrency);
+          this.updateChart();
+        },
+
+        saveGithubSettings() {
+          localStorage.setItem('saturn_gh_token', this.githubToken);
+          localStorage.setItem('saturn_gh_gist_id', this.githubGistId);
+          this.flashStatus('GitHub settings saved locally.');
+        },
+
+        loadLocalPurchases() {
+          const saved = localStorage.getItem('saturn_purchases');
+          if (saved) {
+            this.purchases = JSON.parse(saved);
+          } else {
+            // Seed Sample Data
+            this.purchases = [
+              {
+                id: '1',
+                name: 'Raspberry Pi Zero 2 W',
+                category: 'Computing',
+                quantity: 2,
+                pricePerUnit: 18.5,
+                originalCurrency: 'USD',
+                store: 'Pimoroni',
+                date: '2026-08-10',
+                url: 'https://pimoroni.com',
+                image: '',
+                notes: 'For printer touchscreen UI setup'
+              },
+              {
+                id: '2',
+                name: '100K NTC Thermistors (5 pack)',
+                category: 'Components',
+                quantity: 1,
+                pricePerUnit: 850,
+                originalCurrency: 'DZD',
+                store: 'Local Electronics Market',
+                date: '2026-08-12',
+                url: '',
+                image: '',
+                notes: 'Hotend replacement sensors'
+              }
+            ];
+            this.saveLocalPurchases();
+          }
+          this.updateChart();
+        },
+
+        saveLocalPurchases() {
+          localStorage.setItem('saturn_purchases', JSON.stringify(this.purchases));
+          this.updateChart();
+        },
+
+        // UNIFIED CURRENCY CONVERSION ENGINE
+        convertAmount(amount, origCurrency, targetCurrency) {
+          if (!amount || amount <= 0) return 0;
+          
+          const rateToDZD = this.exchangeRates[origCurrency] || 1;
+          const amountInDZD = origCurrency === 'DZD' ? amount : amount * rateToDZD;
+
+          if (targetCurrency === 'DZD') return amountInDZD;
+          const targetRate = this.exchangeRates[targetCurrency] || 1;
+          return amountInDZD / targetRate;
+        },
+
+        formatCurrency(val, currency) {
+          const formatted = Number(val).toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+          });
+          if (currency === 'USD') return '$' + formatted;
+          if (currency === 'EUR') return '€' + formatted;
+          return formatted + ' DZD';
+        },
+
+        // TOTAL CALCULATIONS
+        calculateGlobalTotalSpent() {
+          return this.purchases.reduce((acc, p) => {
+            return acc + this.convertAmount(p.quantity * p.pricePerUnit, p.originalCurrency, this.displayCurrency);
+          }, 0);
+        },
+
+        calculateFilteredTotalSpent() {
+          return this.filteredPurchases.reduce((acc, p) => {
+            return acc + this.convertAmount(p.quantity * p.pricePerUnit, p.originalCurrency, this.displayCurrency);
+          }, 0);
+        },
+
+        // FILTER & SEARCH LOGIC
+        get filteredPurchases() {
+          let list = [...this.purchases];
+
+          if (this.searchQuery.trim()) {
+            const q = this.searchQuery.toLowerCase();
+            list = list.filter(p => 
+              p.name.toLowerCase().includes(q) ||
+              p.category.toLowerCase().includes(q) ||
+              (p.store && p.store.toLowerCase().includes(q)) ||
+              (p.notes && p.notes.toLowerCase().includes(q))
+            );
+          }
+
+          if (this.selectedCategory !== 'ALL') {
+            list = list.filter(p => p.category === this.selectedCategory);
+          }
+
+          list.sort((a, b) => {
+            if (this.sortBy === 'date-desc') return new Date(b.date) - new Date(a.date);
+            if (this.sortBy === 'date-asc') return new Date(a.date) - new Date(b.date);
+            
+            const totalA = this.convertAmount(a.quantity * a.pricePerUnit, a.originalCurrency, this.displayCurrency);
+            const totalB = this.convertAmount(b.quantity * b.pricePerUnit, b.originalCurrency, this.displayCurrency);
+
+            if (this.sortBy === 'price-desc') return totalB - totalA;
+            if (this.sortBy === 'price-asc') return totalA - totalB;
+            return 0;
+          });
+
+          return list;
+        },
+
+        getTopCategory() {
+          const catTotals = {};
+          this.purchases.forEach(p => {
+            const conv = this.convertAmount(p.quantity * p.pricePerUnit, p.originalCurrency, this.displayCurrency);
+            catTotals[p.category] = (catTotals[p.category] || 0) + conv;
+          });
+
+          let topCat = 'None';
+          let max = 0;
+          for (let cat in catTotals) {
+            if (catTotals[cat] > max) {
+              max = catTotals[cat];
+              topCat = cat;
+            }
+          }
+          return { name: topCat, total: max };
+        },
+
+        // ADD / EDIT / DELETE ACTIONS
+        openAddModal() {
+          this.isEditing = false;
+          this.resetForm();
+          this.showPurchaseModal = true;
+          this.renderIcons();
+        },
+
+        resetForm() {
+          this.form = {
+            id: 'item_' + Date.now(),
+            name: '',
+            category: 'Electronics',
+            quantity: 1,
+            pricePerUnit: 0,
+            originalCurrency: 'DZD',
+            store: '',
+            date: new Date().toISOString().slice(0, 10),
+            url: '',
+            image: '',
+            notes: ''
+          };
+        },
+
+        openEditModal(item) {
+          this.isEditing = true;
+          this.form = JSON.parse(JSON.stringify(item));
+          this.showPurchaseModal = true;
+          this.renderIcons();
+        },
+
+        savePurchase() {
+          if (this.isEditing) {
+            const idx = this.purchases.findIndex(p => p.id === this.form.id);
+            if (idx !== -1) this.purchases[idx] = { ...this.form };
+            this.flashStatus('Purchase updated & saved!');
+          } else {
+            this.purchases.unshift({ ...this.form });
+            this.flashStatus('New purchase added successfully!');
+          }
+
+          this.saveLocalPurchases();
+
+          if (this.keepPanelOpen && !this.isEditing) {
+            this.resetForm();
+          } else {
+            this.showPurchaseModal = false;
+          }
+
+          this.renderIcons();
+        },
+
+        deletePurchase(id) {
+          if (!confirm('Are you sure you want to remove this purchase entry?')) return;
+          this.purchases = this.purchases.filter(p => p.id !== id);
+          
+          this.saveLocalPurchases();
+          if (this.showPurchaseModal) this.showPurchaseModal = false;
+          this.flashStatus('Item removed & saved.');
+          this.renderIcons();
+        },
+
+        handleFileUpload(event) {
+          const file = event.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            this.form.image = e.target.result;
+          };
+          reader.readAsDataURL(file);
+        },
+
+        // GITHUB PUSH & PULL SYNC SYSTEM
+        async pushToGithub() {
+          if (!this.githubToken) {
+            this.showGithubModal = true;
+            this.flashStatus('Please enter your GitHub Personal Access Token.');
+            return;
+          }
+
+          this.syncingGithub = true;
+          this.flashStatus('Pushing data to GitHub...');
+
+          const payload = {
+            description: 'Saturn Tracker Backup',
+            public: false,
+            files: {
+              'saturn_purchases.json': {
+                content: JSON.stringify({
+                  purchases: this.purchases,
+                  exchangeRates: this.exchangeRates,
+                  updatedAt: new Date().toISOString()
+                }, null, 2)
+              }
+            }
+          };
+
+          try {
+            let url = 'https://api.github.com/gists';
+            let method = 'POST';
+
+            if (this.githubGistId) {
+              url += '/' + this.githubGistId;
+              method = 'PATCH';
+            }
+
+            const res = await fetch(url, {
+              method: method,
+              headers: {
+                'Authorization': `token ${this.githubToken}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(payload)
+            });
+
+            if (!res.ok) throw new Error(`GitHub API Error: ${res.statusText}`);
+
+            const data = await res.json();
+            if (data.id) {
+              this.githubGistId = data.id;
+              localStorage.setItem('saturn_gh_gist_id', data.id);
+            }
+
+            this.flashStatus('Successfully pushed purchase data to GitHub!');
+          } catch (err) {
+            alert('Push failed: ' + err.message);
+            this.flashStatus('Push failed: ' + err.message);
+          } finally {
+            this.syncingGithub = false;
+          }
+        },
+
+        async pullFromGithub() {
+          if (!this.githubToken || !this.githubGistId) {
+            this.showGithubModal = true;
+            this.flashStatus('Provide your GitHub Token and Gist ID to pull data.');
+            return;
+          }
+
+          this.syncingGithub = true;
+          this.flashStatus('Pulling latest data from GitHub...');
+
+          try {
+            const res = await fetch(`https://api.github.com/gists/${this.githubGistId}`, {
+              headers: {
+                'Authorization': `token ${this.githubToken}`
+              }
+            });
+
+            if (!res.ok) throw new Error(`GitHub API Error: ${res.statusText}`);
+
+            const data = await res.json();
+            const fileObj = data.files['saturn_purchases.json'];
+
+            if (!fileObj || !fileObj.content) {
+              throw new Error('saturn_purchases.json not found in this Gist.');
+            }
+
+            const parsed = JSON.parse(fileObj.content);
+            if (parsed.purchases) {
+              this.purchases = parsed.purchases;
+              if (parsed.exchangeRates) this.exchangeRates = parsed.exchangeRates;
+
+              this.saveLocalPurchases();
+              this.saveLocalSettings();
+              this.flashStatus('Data pulled from GitHub & auto-saved locally!');
+              this.renderIcons();
+            }
+          } catch (err) {
+            alert('Pull failed: ' + err.message);
+            this.flashStatus('Pull failed: ' + err.message);
+          } finally {
+            this.syncingGithub = false;
+          }
+        },
+
+        flashStatus(msg) {
+          this.syncStatus = msg;
+          this.renderIcons();
+          setTimeout(() => {
+            if (this.syncStatus === msg) this.syncStatus = '';
+          }, 4000);
+        },
+
+        // EXPORT FUNCTIONS
+        exportCSV() {
+          const headers = ['ID', 'Item Name', 'Category', 'Quantity', 'Price Per Unit', 'Original Currency', 'Store', 'Date', 'Converted Total (' + this.displayCurrency + ')', 'Notes'];
+          const rows = this.filteredPurchases.map(p => [
+            p.id,
+            `"${p.name.replace(/"/g, '""')}"`,
+            p.category,
+            p.quantity,
+            p.pricePerUnit,
+            p.originalCurrency,
+            `"${(p.store || '').replace(/"/g, '""')}"`,
+            p.date,
+            this.convertAmount(p.quantity * p.pricePerUnit, p.originalCurrency, this.displayCurrency).toFixed(2),
+            `"${(p.notes || '').replace(/"/g, '""')}"`
+          ]);
+
+          const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+          const encodedUri = encodeURI(csvContent);
+          const link = document.createElement('a');
+          link.setAttribute('href', encodedUri);
+          link.setAttribute('download', `saturn_purchases_${new Date().toISOString().slice(0, 10)}.csv`);
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+        },
+
+        triggerPrintReport() {
+          window.print();
+        },
+
+        // CHART VISUALIZATION
+        initChart() {
+          const canvas = document.getElementById('categoryChart');
+          if (!canvas) return;
+
+          const ctx = canvas.getContext('2d');
+          this.chartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+              labels: [],
+              datasets: [{
+                data: [],
+                backgroundColor: [],
+                borderColor: '#1A1612',
+                borderWidth: 2
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  position: 'bottom',
+                  labels: { color: '#D4C4A8', font: { size: 10, family: 'monospace' } }
+                }
+              }
+            }
+          });
+          this.updateChart();
+        },
+
+        updateChart() {
+          if (!this.chartInstance) return;
+
+          const catData = {};
+          this.purchases.forEach(p => {
+            const conv = this.convertAmount(p.quantity * p.pricePerUnit, p.originalCurrency, this.displayCurrency);
+            catData[p.category] = (catData[p.category] || 0) + conv;
+          });
+
+          const labels = Object.keys(catData);
+          const data = Object.values(catData);
+          const bgColors = labels.map(c => this.categoryColors[c] || '#666666');
+
+          this.chartInstance.data.labels = labels;
+          this.chartInstance.data.datasets[0].data = data;
+          this.chartInstance.data.datasets[0].backgroundColor = bgColors;
+          this.chartInstance.update();
+        }
+      };
+    }
+  </script>
+</body>
+</html>
