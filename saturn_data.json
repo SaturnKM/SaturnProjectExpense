@@ -1,5 +1,31 @@
 [
   {
+    "id": 1786922693211,
+    "name": "cable 2*2.5mm\"square\" souple 4meter",
+    "category": "Electronics",
+    "store": "",
+    "quantity": 1,
+    "pricePerUnit": 800,
+    "originalCurrency": "DZD",
+    "date": "2026-08-16",
+    "url": "",
+    "image": "",
+    "notes": ""
+  },
+  {
+    "id": 1786922660139,
+    "name": "file 4 amiantee 1mm",
+    "category": "Electronics",
+    "store": "",
+    "quantity": 2,
+    "pricePerUnit": 230,
+    "originalCurrency": "DZD",
+    "date": "2026-08-16",
+    "url": "",
+    "image": "",
+    "notes": ""
+  },
+  {
     "id": 1786922203227,
     "name": "5 inch touch screen",
     "category": "Electronics",
@@ -15,7 +41,7 @@
   {
     "id": 1786922060035,
     "name": "vis m5 8mm",
-    "category": "Electronics",
+    "category": "Hardware",
     "store": "",
     "quantity": 16,
     "pricePerUnit": 8,
@@ -93,7 +119,7 @@
   {
     "id": "item_1786913405262",
     "name": "coupler motor/rod",
-    "category": "Mechanical",
+    "category": "Hardware",
     "quantity": 2,
     "pricePerUnit": 370,
     "originalCurrency": "DZD",
@@ -106,7 +132,7 @@
   {
     "id": "item_1786913218542",
     "name": "threaded rod 50mm WITH BRASS NUT",
-    "category": "Mechanical",
+    "category": "Hardware",
     "quantity": 2,
     "pricePerUnit": 2200,
     "originalCurrency": "DZD",
@@ -158,7 +184,7 @@
   {
     "id": "item_1786912196461",
     "name": "NEMA17 17HS4401S",
-    "category": "Mechanical",
+    "category": "Hardware",
     "quantity": 4,
     "pricePerUnit": 2500,
     "originalCurrency": "DZD",
