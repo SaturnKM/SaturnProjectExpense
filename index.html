@@ -1015,7 +1015,8 @@
 
         resetForm() {
           this.form = {
-            id: 'item_' + Date.now(),
+            // Uses crypto.randomUUID() or a random fallback to guarantee unique IDs
+            id: 'item_' + (window.crypto?.randomUUID ? crypto.randomUUID() : Date.now() + '_' + Math.random().toString(36).substring(2, 9)),
             name: '',
             category: 'Electronics',
             quantity: 1,
@@ -1039,23 +1040,31 @@
         savePurchase() {
           if (this.isEditing) {
             const idx = this.purchases.findIndex(p => p.id === this.form.id);
-            if (idx !== -1) this.purchases[idx] = { ...this.form };
+            if (idx !== -1) this.purchases[idx] = JSON.parse(JSON.stringify(this.form));
             this.flashStatus('Purchase updated & saved!');
           } else {
-            this.purchases.unshift({ ...this.form });
+            this.searchQuery = '';
+            this.selectedCategory = 'ALL';
+            
+            // Deep clone the form object to break object reference links
+            const newItem = JSON.parse(JSON.stringify(this.form));
+            
+            // Unshift new item into list
+            this.purchases = [newItem, ...this.purchases];
             this.flashStatus('New purchase added successfully!');
           }
-
+        
           this.saveLocalPurchases();
-
+        
           if (this.keepPanelOpen && !this.isEditing) {
+            // Generate a fresh unique ID for the next item
             this.resetForm();
           } else {
             this.showPurchaseModal = false;
           }
-
+        
           this.renderIcons();
-        },
+        }
 
         deletePurchase(id) {
           if (!confirm('Are you sure you want to remove this purchase entry?')) return;
