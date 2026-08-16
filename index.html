@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Saturn Expense & Purchase Tracker</title>
+  <title>Saturn Expense & Purchase Tracker</title>  
   
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -398,7 +398,7 @@
               </div>
             </div>
 
-            <!-- Desktop Table View (No Scrollbar / No Slider) -->
+            <!-- Desktop Table View -->
             <div class="hidden md:block w-full">
               <table class="w-full table-fixed text-left text-xs">
                 <thead class="bg-[#0f0c0a] text-[var(--text2)] font-mono uppercase tracking-wider border-b border-[var(--border)]">
@@ -635,20 +635,17 @@
           </button>
         </div>
 
-        <!-- Footer Modal Buttons -->
-        <div class="flex items-center justify-between pt-3 border-t border-[var(--border)]">
-          <div>
-            <template x-if="isEditing">
-              <button type="button" @click="deletePurchase(form.id)" class="px-3 py-2 rounded-lg bg-[#2e1512] border border-[var(--red)] text-[var(--red)] hover:bg-[var(--red)] hover:text-white transition font-mono flex items-center space-x-1">
-                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                <span>Delete</span>
-              </button>
-            </template>
-          </div>
-
-          <div class="flex space-x-2">
-            <button type="button" @click="showPurchaseModal = false" class="px-4 py-2 rounded-lg bg-[var(--surface)] text-[var(--text2)] font-mono">Cancel</button>
-            <button type="submit" class="px-5 py-2 rounded-lg bg-gradient-to-r from-[var(--accent2)] to-[var(--accent1)] text-[#080604] font-bold uppercase font-mono tracking-wider" x-text="isEditing ? 'Update Purchase' : 'Save Purchase'"></button>
+        <div class="flex justify-between items-center pt-3 border-t border-[var(--border)]">
+          <template x-if="isEditing">
+            <button type="button" @click="deletePurchase(form.id)" class="px-3 py-2 rounded-lg bg-[var(--red)]/20 text-[var(--red)] border border-[var(--red)]/40 hover:bg-[var(--red)] hover:text-white transition font-mono text-xs">
+              Delete
+            </button>
+          </template>
+          <div class="flex space-x-2 ml-auto">
+            <button type="button" @click="showPurchaseModal = false" class="px-4 py-2 rounded-lg border border-[var(--border)] text-[var(--text2)] hover:text-white">Cancel</button>
+            <button type="submit" class="px-5 py-2 rounded-lg bg-gradient-to-r from-[var(--accent2)] to-[var(--accent1)] text-[#080604] font-bold uppercase tracking-wider">
+              Save Entry
+            </button>
           </div>
         </div>
 
@@ -656,45 +653,7 @@
     </div>
   </div>
 
-  <!-- GitHub Sync Settings Modal -->
-  <div x-show="showGithubModal" class="no-print fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" x-cloak>
-    <div @click.away="showGithubModal = false" class="saturn-card rounded-xl max-w-md w-full p-6 space-y-4 shadow-2xl">
-      <div class="flex justify-between items-center border-b border-[var(--border)] pb-3">
-        <h3 class="font-bold text-sm uppercase tracking-wider text-[var(--accent1)] flex items-center gap-2">
-          <i data-lucide="github" class="w-4 h-4"></i> GitHub Sync Integration
-        </h3>
-        <button @click="showGithubModal = false" class="text-[var(--text2)] hover:text-white">✕</button>
-      </div>
-
-      <div class="space-y-3 text-xs">
-        <p class="text-[var(--text2)] leading-relaxed">
-          Push and Pull purchase data via GitHub Gist. Generate a Personal Access Token (PAT) with <code class="text-[var(--accent1)]">gist</code> scope.
-        </p>
-
-        <div class="space-y-3 font-mono">
-          <div>
-            <label class="block text-[var(--text2)] mb-1">GitHub Access Token (PAT)</label>
-            <input type="password" x-model="githubToken" placeholder="ghp_xxxxxxxxxxxx" class="w-full p-2.5 saturn-input rounded-lg">
-          </div>
-
-          <div>
-            <label class="block text-[var(--text2)] mb-1">Gist ID (Auto-generated on first Push)</label>
-            <input type="text" x-model="githubGistId" placeholder="e.g. 8f1d8c..." class="w-full p-2.5 saturn-input rounded-lg">
-          </div>
-        </div>
-
-        <div class="flex items-center justify-between pt-2 border-t border-[var(--border)]">
-          <button @click="saveGithubSettings(); showGithubModal = false;" class="px-4 py-2 bg-[var(--surface)] text-[var(--text1)] border border-[var(--border)] rounded-lg font-mono">Save Credentials</button>
-          <div class="flex space-x-2">
-            <button @click="pullFromGithub()" class="px-3 py-2 bg-[var(--accent2)] text-white font-bold rounded-lg font-mono">Pull Now</button>
-            <button @click="pushToGithub()" class="px-3 py-2 bg-[var(--green)] text-black font-bold rounded-lg font-mono">Push Now</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Currency Exchange Settings Modal -->
+  <!-- Currency Modal -->
   <div x-show="showCurrencyModal" class="no-print fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" x-cloak>
     <div @click.away="showCurrencyModal = false" class="saturn-card rounded-xl max-w-md w-full p-6 space-y-4 shadow-2xl">
       <div class="flex justify-between items-center border-b border-[var(--border)] pb-3">
@@ -705,542 +664,342 @@
       <div class="space-y-4 text-xs font-mono">
         <div>
           <label class="block text-[var(--text2)] mb-1">Active Display Currency</label>
-          <select x-model="displayCurrency" @change="saveLocalSettings()" class="w-full p-2.5 saturn-input rounded-lg font-bold">
+          <select x-model="displayCurrency" class="w-full p-2.5 saturn-input rounded-lg">
             <option value="DZD">DZD (Algerian Dinar)</option>
-            <option value="USD">USD ($ United States Dollar)</option>
-            <option value="EUR">EUR (€ Euro)</option>
+            <option value="USD">USD (US Dollar)</option>
+            <option value="EUR">EUR (Euro)</option>
           </select>
         </div>
 
-        <div class="p-3 bg-[#0d0a08] border border-[var(--border)] rounded-lg space-y-3">
-          <p class="text-[11px] text-[var(--accent1)]">Manual Exchange Rates (to DZD):</p>
-          
+        <div class="border-t border-[var(--border)] pt-3 space-y-3">
+          <p class="text-[var(--accent1)] font-bold">Custom Exchange Rates (Base: DZD)</p>
           <div>
             <label class="block text-[var(--text2)] mb-1">1 USD = ? DZD</label>
-            <input type="number" step="0.1" x-model.number="exchangeRates.USD" @input="saveLocalSettings()" class="w-full p-2 saturn-input rounded-lg">
+            <input type="number" step="0.1" x-model.number="exchangeRates.USD" class="w-full p-2.5 saturn-input rounded-lg">
           </div>
-
           <div>
             <label class="block text-[var(--text2)] mb-1">1 EUR = ? DZD</label>
-            <input type="number" step="0.1" x-model.number="exchangeRates.EUR" @input="saveLocalSettings()" class="w-full p-2 saturn-input rounded-lg">
+            <input type="number" step="0.1" x-model.number="exchangeRates.EUR" class="w-full p-2.5 saturn-input rounded-lg">
           </div>
         </div>
+      </div>
 
-        <p class="text-[10px] text-[var(--text2)] leading-relaxed">
-          * Original purchase prices remain strictly preserved. Conversion pipeline: <code class="text-[var(--accent1)]">Original → DZD → Display Currency</code>.
-        </p>
-
-        <div class="flex justify-end pt-2">
-          <button @click="showCurrencyModal = false" class="px-5 py-2 bg-[var(--accent1)] text-[#080604] font-bold rounded-lg uppercase">Done</button>
-        </div>
+      <div class="flex justify-end pt-3 border-t border-[var(--border)]">
+        <button @click="saveCurrencySettings()" class="px-4 py-2 rounded-lg bg-[var(--accent1)] text-black font-bold uppercase tracking-wider text-xs">Save Settings</button>
       </div>
     </div>
   </div>
 
-  <!-- Image Lightbox Modal -->
-  <div x-show="viewImageModal" class="no-print fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm" x-cloak @click="viewImageModal = null">
-    <div class="relative max-w-3xl w-full">
-      <img :src="viewImageModal" class="w-full max-h-[85vh] object-contain rounded-xl border border-[var(--border)]">
-      <p class="text-center text-xs text-[var(--text2)] font-mono mt-2">Click anywhere to close</p>
+  <!-- GitHub Modal -->
+  <div x-show="showGithubModal" class="no-print fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" x-cloak>
+    <div @click.away="showGithubModal = false" class="saturn-card rounded-xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+      <div class="flex justify-between items-center border-b border-[var(--border)] pb-3">
+        <h3 class="font-bold text-sm uppercase tracking-wider text-[var(--accent1)]">GitHub Storage Sync</h3>
+        <button @click="showGithubModal = false" class="text-[var(--text2)] hover:text-white">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-mono text-[var(--text2)] mb-1">Personal Access Token (PAT)</label>
+          <input type="password" x-model="githubConfig.token" placeholder="ghp_xxxxxxxxxxxx" class="w-full p-2.5 saturn-input rounded-lg font-mono">
+        </div>
+        <div>
+          <label class="block font-mono text-[var(--text2)] mb-1">Repository (username/repo)</label>
+          <input type="text" x-model="githubConfig.repo" placeholder="owner/repository" class="w-full p-2.5 saturn-input rounded-lg font-mono">
+        </div>
+        <div>
+          <label class="block font-mono text-[var(--text2)] mb-1">File Path in Repo</label>
+          <input type="text" x-model="githubConfig.path" placeholder="data/purchases.json" class="w-full p-2.5 saturn-input rounded-lg font-mono">
+        </div>
+      </div>
+
+      <div class="flex justify-end space-x-2 pt-3 border-t border-[var(--border)]">
+        <button @click="showGithubModal = false" class="px-4 py-2 rounded-lg border border-[var(--border)] text-[var(--text2)]">Cancel</button>
+        <button @click="saveGithubSettings()" class="px-4 py-2 rounded-lg bg-[var(--accent1)] text-black font-bold uppercase tracking-wider text-xs">Save Configuration</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Image Viewer Modal -->
+  <div x-show="viewImageModal" class="no-print fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md" x-cloak>
+    <div class="relative max-w-3xl max-h-[90vh] overflow-hidden rounded-xl">
+      <button @click="viewImageModal = null" class="absolute top-3 right-3 p-2 bg-black/60 rounded-full text-white hover:bg-black">✕</button>
+      <img :src="viewImageModal" class="max-w-full max-h-[85vh] object-contain rounded-lg">
     </div>
   </div>
 
 
-  <!-- ==================== JAVASCRIPT LOGIC ==================== -->
+  <!-- ==================== APPLICATION LOGIC (Alpine.js) ==================== -->
   <script>
     function saturnApp() {
       return {
-        // App State
+        // Core State
         purchases: [],
-        searchQuery: '',
-        selectedCategory: 'ALL',
-        sortBy: 'date-desc',
         displayCurrency: 'DZD',
+        exchangeRates: { USD: 220, EUR: 235 },
         
-        // Exchange Rates to DZD
-        exchangeRates: {
-          DZD: 1,
-          USD: 220,
-          EUR: 238
-        },
-
-        // GitHub Credentials & State
-        githubToken: '',
-        githubGistId: '',
-        syncingGithub: false,
-        syncStatus: '',
-
-        // Panel Switch behavior state
-        keepPanelOpen: false,
-
-        // Categories & Palette
-        categories: [
-          'Electronics', 'Mechanical', '3D Printing', 'Tools', 'Electrical', 
-          'Components', 'Computing', 'Hardware', 'Consumables', 'Shipping', 
-          'Services', 'Other'
-        ],
-
-        categoryColors: {
-          'Electronics': '#C4956A',
-          'Mechanical': '#8B6340',
-          '3D Printing': '#5A9E6A',
-          'Tools': '#C4A43A',
-          'Electrical': '#C44A3A',
-          'Components': '#D4C4A8',
-          'Computing': '#3A82C4',
-          'Hardware': '#7A6AC4',
-          'Consumables': '#C46A9E',
-          'Shipping': '#6AC4B8',
-          'Services': '#9EC45A',
-          'Other': '#666666'
-        },
-
-        categoryDescriptions: {
-          'Electronics': 'Arduino, ESP32, Raspberry Pi, sensors, PCBs, microcontrollers',
-          'Mechanical': 'Screws, bearings, linear rods, gears, brackets, shafts',
-          '3D Printing': 'Filament, nozzles, hotends, heatbeds, PTFE tubes',
-          'Tools': 'Soldering irons, multimeters, wire cutters, screwdrivers',
-          'Electrical': 'Wires, connectors, switches, fuses, power supplies',
-          'Components': 'Resistors, capacitors, LEDs, diodes, transistors, ICs',
-          'Computing': 'Displays, SD cards, USB modules, cooling fans',
-          'Hardware': 'Nuts, bolts, washers, standoffs, fasteners',
-          'Consumables': 'Solder wire, heat-shrink, kapton tape, glue',
-          'Shipping': 'Delivery, import customs, and transport fees',
-          'Services': 'Machining, laser cutting, custom PCB manufacturing',
-          'Other': 'General items not fitting listed categories'
-        },
-
-        // Modals
+        // Modals & Controls
         showPurchaseModal: false,
         showCurrencyModal: false,
         showGithubModal: false,
         viewImageModal: null,
         isEditing: false,
+        keepPanelOpen: false,
+        syncStatus: '',
+        syncingGithub: false,
 
-        // Form State
-        form: {
-          id: null,
-          name: '',
-          category: 'Electronics',
-          quantity: 1,
-          pricePerUnit: 0,
-          originalCurrency: 'DZD',
-          store: '',
-          date: new Date().toISOString().slice(0, 10),
-          url: '',
-          image: '',
-          notes: ''
+        // Filters & Search
+        searchQuery: '',
+        selectedCategory: 'ALL',
+        sortBy: 'date-desc',
+
+        // GitHub Integration Setup
+        githubConfig: { token: '', repo: '', path: 'saturn_data.json' },
+
+        // Category Configurations
+        categories: ['Electronics', 'Hardware', 'Thermal & Cooling', 'Filament Recycler', '3D Printing', 'Software / Cloud', 'Tools', 'General / Other'],
+        categoryColors: {
+          'Electronics': '#C4956A',
+          'Hardware': '#8B6340',
+          'Thermal & Cooling': '#C44A3A',
+          'Filament Recycler': '#5A9E6A',
+          '3D Printing': '#C4A43A',
+          'Software / Cloud': '#3A82C4',
+          'Tools': '#A35AC4',
+          'General / Other': '#71717A'
+        },
+        categoryDescriptions: {
+          'Electronics': 'Microcontrollers, sensors, power modules, logic boards',
+          'Hardware': 'Fasteners, rails, structural components, frames',
+          'Thermal & Cooling': 'Heatsinks, cooling fans, thermistors, heating blocks',
+          'Filament Recycler': 'Crusher blades, extruders, motor drivers, pullers',
+          '3D Printing': 'Nozzles, build plates, hotends, PTFE tubing',
+          'Software / Cloud': 'Hosting, domain registration, API services, OS tools',
+          'Tools': 'Hand tools, soldering supplies, measuring instruments',
+          'General / Other': 'Miscellaneous supplies and uncategorized expenditures'
         },
 
+        // Form Object Model
+        form: { id: null, name: '', category: 'Electronics', store: '', quantity: 1, pricePerUnit: 0, originalCurrency: 'DZD', date: '', url: '', image: '', notes: '' },
+        
         chartInstance: null,
 
-        // Helper to safely re-render icons
-        renderIcons() {
-          this.$nextTick(() => {
-            if (window.lucide && typeof window.lucide.createIcons === 'function') {
-              window.lucide.createIcons();
-            }
-          });
-        },
-
-        // INIT APPLICATION
+        // Initialize Application Data
         initApp() {
-          this.loadLocalSettings();
-          this.loadLocalPurchases();
-          this.initChart();
-          this.renderIcons();
-        },
-
-        // LOCAL STORAGE - AUTO SAVE & LOAD
-        loadLocalSettings() {
+          const savedData = localStorage.getItem('saturn_purchases');
+          if (savedData) this.purchases = JSON.parse(savedData);
+          
           const savedRates = localStorage.getItem('saturn_rates');
           if (savedRates) this.exchangeRates = JSON.parse(savedRates);
 
-          const savedCurr = localStorage.getItem('saturn_currency');
-          if (savedCurr) this.displayCurrency = savedCurr;
+          const savedCurrency = localStorage.getItem('saturn_currency');
+          if (savedCurrency) this.displayCurrency = savedCurrency;
 
-          this.githubToken = localStorage.getItem('saturn_gh_token') || '';
-          this.githubGistId = localStorage.getItem('saturn_gh_gist_id') || '';
+          const savedGithub = localStorage.getItem('saturn_github');
+          if (savedGithub) this.githubConfig = JSON.parse(savedGithub);
+
+          this.$watch('purchases', () => {
+            localStorage.setItem('saturn_purchases', JSON.stringify(this.purchases));
+            this.updateChart();
+          });
+
+          this.$nextTick(() => {
+            if (window.lucide) lucide.createIcons();
+            this.updateChart();
+          });
         },
 
-        saveLocalSettings() {
-          localStorage.setItem('saturn_rates', JSON.stringify(this.exchangeRates));
-          localStorage.setItem('saturn_currency', this.displayCurrency);
-          this.updateChart();
+        // Filtered & Sorted Purchases Computation
+        get filteredPurchases() {
+          return this.purchases
+            .filter(item => {
+              const matchesSearch = 
+                item.name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+                (item.store && item.store.toLowerCase().includes(this.searchQuery.toLowerCase())) ||
+                (item.notes && item.notes.toLowerCase().includes(this.searchQuery.toLowerCase())) ||
+                item.category.toLowerCase().includes(this.searchQuery.toLowerCase());
+              
+              const matchesCategory = this.selectedCategory === 'ALL' || item.category === this.selectedCategory;
+              return matchesSearch && matchesCategory;
+            })
+            .sort((a, b) => {
+              if (this.sortBy === 'date-desc') return new Date(b.date) - new Date(a.date);
+              if (this.sortBy === 'date-asc') return new Date(a.date) - new Date(b.date);
+              const priceA = this.convertAmount(a.pricePerUnit * a.quantity, a.originalCurrency, 'DZD');
+              const priceB = this.convertAmount(b.pricePerUnit * b.quantity, b.originalCurrency, 'DZD');
+              if (this.sortBy === 'price-desc') return priceB - priceA;
+              if (this.sortBy === 'price-asc') return priceA - priceB;
+              return 0;
+            });
         },
 
-        saveGithubSettings() {
-          localStorage.setItem('saturn_gh_token', this.githubToken);
-          localStorage.setItem('saturn_gh_gist_id', this.githubGistId);
-          this.flashStatus('GitHub settings saved locally.');
-        },
-
-        loadLocalPurchases() {
-          const saved = localStorage.getItem('saturn_purchases');
-          if (saved) {
-            this.purchases = JSON.parse(saved);
-          } else {
-            // Seed Sample Data
-            this.purchases = [
-              {
-                id: '1',
-                name: 'Raspberry Pi Zero 2 W',
-                category: 'Computing',
-                quantity: 2,
-                pricePerUnit: 18.5,
-                originalCurrency: 'USD',
-                store: 'Pimoroni',
-                date: '2026-08-10',
-                url: 'https://pimoroni.com',
-                image: '',
-                notes: 'For printer touchscreen UI setup'
-              },
-              {
-                id: '2',
-                name: '100K NTC Thermistors (5 pack)',
-                category: 'Components',
-                quantity: 1,
-                pricePerUnit: 850,
-                originalCurrency: 'DZD',
-                store: 'Local Electronics Market',
-                date: '2026-08-12',
-                url: '',
-                image: '',
-                notes: 'Hotend replacement sensors'
-              }
-            ];
-            this.saveLocalPurchases();
-          }
-          this.updateChart();
-        },
-
-        saveLocalPurchases() {
-          localStorage.setItem('saturn_purchases', JSON.stringify(this.purchases));
-          this.updateChart();
-        },
-
-        // UNIFIED CURRENCY CONVERSION ENGINE
-        convertAmount(amount, origCurrency, targetCurrency) {
-          if (!amount || amount <= 0) return 0;
+        // Conversions and Totals
+        convertAmount(amount, fromCurr, toCurr) {
+          if (!amount) return 0;
+          if (fromCurr === toCurr) return amount;
           
-          const rateToDZD = this.exchangeRates[origCurrency] || 1;
-          const amountInDZD = origCurrency === 'DZD' ? amount : amount * rateToDZD;
+          let amountInDZD = amount;
+          if (fromCurr === 'USD') amountInDZD = amount * this.exchangeRates.USD;
+          if (fromCurr === 'EUR') amountInDZD = amount * this.exchangeRates.EUR;
 
-          if (targetCurrency === 'DZD') return amountInDZD;
-          const targetRate = this.exchangeRates[targetCurrency] || 1;
-          return amountInDZD / targetRate;
+          if (toCurr === 'DZD') return amountInDZD;
+          if (toCurr === 'USD') return amountInDZD / this.exchangeRates.USD;
+          if (toCurr === 'EUR') return amountInDZD / this.exchangeRates.EUR;
+          return amountInDZD;
         },
 
         formatCurrency(val, currency) {
-          const formatted = Number(val).toLocaleString(undefined, {
-            minimumFractionDigits: 2,
+          return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: currency === 'DZD' ? 'DZD' : currency,
             maximumFractionDigits: 2
-          });
-          if (currency === 'USD') return '$' + formatted;
-          if (currency === 'EUR') return '€' + formatted;
-          return formatted + ' DZD';
+          }).format(val || 0);
         },
 
-        // TOTAL CALCULATIONS
         calculateGlobalTotalSpent() {
-          return this.purchases.reduce((acc, p) => {
-            return acc + this.convertAmount(p.quantity * p.pricePerUnit, p.originalCurrency, this.displayCurrency);
-          }, 0);
+          return this.purchases.reduce((sum, item) => sum + this.convertAmount(item.pricePerUnit * item.quantity, item.originalCurrency, this.displayCurrency), 0);
         },
 
         calculateFilteredTotalSpent() {
-          return this.filteredPurchases.reduce((acc, p) => {
-            return acc + this.convertAmount(p.quantity * p.pricePerUnit, p.originalCurrency, this.displayCurrency);
-          }, 0);
-        },
-
-        // FILTER & SEARCH LOGIC
-        get filteredPurchases() {
-          let list = [...this.purchases];
-
-          if (this.searchQuery.trim()) {
-            const q = this.searchQuery.toLowerCase();
-            list = list.filter(p => 
-              p.name.toLowerCase().includes(q) ||
-              p.category.toLowerCase().includes(q) ||
-              (p.store && p.store.toLowerCase().includes(q)) ||
-              (p.notes && p.notes.toLowerCase().includes(q))
-            );
-          }
-
-          if (this.selectedCategory !== 'ALL') {
-            list = list.filter(p => p.category === this.selectedCategory);
-          }
-
-          list.sort((a, b) => {
-            if (this.sortBy === 'date-desc') return new Date(b.date) - new Date(a.date);
-            if (this.sortBy === 'date-asc') return new Date(a.date) - new Date(b.date);
-            
-            const totalA = this.convertAmount(a.quantity * a.pricePerUnit, a.originalCurrency, this.displayCurrency);
-            const totalB = this.convertAmount(b.quantity * b.pricePerUnit, b.originalCurrency, this.displayCurrency);
-
-            if (this.sortBy === 'price-desc') return totalB - totalA;
-            if (this.sortBy === 'price-asc') return totalA - totalB;
-            return 0;
-          });
-
-          return list;
+          return this.filteredPurchases.reduce((sum, item) => sum + this.convertAmount(item.pricePerUnit * item.quantity, item.originalCurrency, this.displayCurrency), 0);
         },
 
         getTopCategory() {
-          const catTotals = {};
-          this.purchases.forEach(p => {
-            const conv = this.convertAmount(p.quantity * p.pricePerUnit, p.originalCurrency, this.displayCurrency);
-            catTotals[p.category] = (catTotals[p.category] || 0) + conv;
+          const totals = {};
+          this.purchases.forEach(i => {
+            const cost = this.convertAmount(i.pricePerUnit * i.quantity, i.originalCurrency, this.displayCurrency);
+            totals[i.category] = (totals[i.category] || 0) + cost;
           });
-
-          let topCat = 'None';
-          let max = 0;
-          for (let cat in catTotals) {
-            if (catTotals[cat] > max) {
-              max = catTotals[cat];
-              topCat = cat;
-            }
-          }
-          return { name: topCat, total: max };
+          let topName = 'None', topTotal = 0;
+          Object.entries(totals).forEach(([cat, val]) => {
+            if (val > topTotal) { topName = cat; topTotal = val; }
+          });
+          return { name: topName, total: topTotal };
         },
 
-        // ADD / EDIT / DELETE ACTIONS
+        // Client-Side Image Compression on Upload
+        handleFileUpload(e) {
+          const file = e.target.files[0];
+          if (!file) return;
+
+          const reader = new FileReader();
+          reader.readAsDataURL(file);
+          reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+              const canvas = document.createElement('canvas');
+              const maxWidth = 800; // Resize large photos
+              let width = img.width;
+              let height = img.height;
+
+              if (width > maxWidth) {
+                height = Math.round((height * maxWidth) / width);
+                width = maxWidth;
+              }
+
+              canvas.width = width;
+              canvas.height = height;
+
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(img, 0, 0, width, height);
+
+              // Compress to JPEG with 0.7 quality
+              this.form.image = canvas.toDataURL('image/jpeg', 0.7);
+            };
+          };
+        },
+
+        // Form Handlers
         openAddModal() {
           this.isEditing = false;
-          this.resetForm();
-          this.showPurchaseModal = true;
-          this.renderIcons();
-        },
-
-        resetForm() {
           this.form = {
-            // Uses crypto.randomUUID() or a random fallback to guarantee unique IDs
-            id: 'item_' + (window.crypto?.randomUUID ? crypto.randomUUID() : Date.now() + '_' + Math.random().toString(36).substring(2, 9)),
+            id: Date.now(),
             name: '',
             category: 'Electronics',
+            store: '',
             quantity: 1,
             pricePerUnit: 0,
-            originalCurrency: 'DZD',
-            store: '',
-            date: new Date().toISOString().slice(0, 10),
+            originalCurrency: this.displayCurrency,
+            date: new Date().toISOString().split('T')[0],
             url: '',
             image: '',
             notes: ''
           };
+          this.showPurchaseModal = true;
         },
 
         openEditModal(item) {
           this.isEditing = true;
           this.form = JSON.parse(JSON.stringify(item));
           this.showPurchaseModal = true;
-          this.renderIcons();
         },
 
         savePurchase() {
           if (this.isEditing) {
-            const idx = this.purchases.findIndex(p => p.id === this.form.id);
-            if (idx !== -1) this.purchases[idx] = JSON.parse(JSON.stringify(this.form));
-            this.flashStatus('Purchase updated & saved!');
+            const index = this.purchases.findIndex(i => i.id === this.form.id);
+            if (index !== -1) this.purchases[index] = { ...this.form };
           } else {
-            this.searchQuery = '';
-            this.selectedCategory = 'ALL';
-            
-            // Deep clone the form object to break object reference links
-            const newItem = JSON.parse(JSON.stringify(this.form));
-            
-            // Unshift new item into list
-            this.purchases = [newItem, ...this.purchases];
-            this.flashStatus('New purchase added successfully!');
+            this.purchases.unshift({ ...this.form });
           }
-        
-          this.saveLocalPurchases();
-        
-          if (this.keepPanelOpen && !this.isEditing) {
-            // Generate a fresh unique ID for the next item
-            this.resetForm();
-          } else {
+
+          if (!this.keepPanelOpen) {
             this.showPurchaseModal = false;
+          } else {
+            this.openAddModal(); // Reset form for rapid consecutive entry
           }
-        
-          this.renderIcons();
-        }
+          
+          this.showNotification('Purchase record saved successfully');
+        },
 
         deletePurchase(id) {
-          if (!confirm('Are you sure you want to remove this purchase entry?')) return;
-          this.purchases = this.purchases.filter(p => p.id !== id);
+          if (confirm('Are you sure you want to delete this item?')) {
+            this.purchases = this.purchases.filter(i => i.id !== id);
+            this.showPurchaseModal = false;
+            this.showNotification('Purchase record deleted');
+          }
+        },
+
+        saveCurrencySettings() {
+          localStorage.setItem('saturn_currency', this.displayCurrency);
+          localStorage.setItem('saturn_rates', JSON.stringify(this.exchangeRates));
+          this.showCurrencyModal = false;
+          this.updateChart();
+          this.showNotification('Currency settings updated');
+        },
+
+        saveGithubSettings() {
+          localStorage.setItem('saturn_github', JSON.stringify(this.githubConfig));
+          this.showGithubModal = false;
+          this.showNotification('GitHub credentials saved');
+        },
+
+        // Chart Visualizer
+        updateChart() {
+          const ctx = document.getElementById('categoryChart');
+          if (!ctx) return;
+
+          const totalsByCat = {};
+          this.categories.forEach(c => totalsByCat[c] = 0);
           
-          this.saveLocalPurchases();
-          if (this.showPurchaseModal) this.showPurchaseModal = false;
-          this.flashStatus('Item removed & saved.');
-          this.renderIcons();
-        },
+          this.purchases.forEach(i => {
+            const converted = this.convertAmount(i.pricePerUnit * i.quantity, i.originalCurrency, this.displayCurrency);
+            totalsByCat[i.category] = (totalsByCat[i.category] || 0) + converted;
+          });
 
-        handleFileUpload(event) {
-          const file = event.target.files[0];
-          if (!file) return;
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            this.form.image = e.target.result;
-          };
-          reader.readAsDataURL(file);
-        },
+          const activeCategories = this.categories.filter(c => totalsByCat[c] > 0);
+          const dataValues = activeCategories.map(c => totalsByCat[c]);
+          const bgColors = activeCategories.map(c => this.categoryColors[c] || '#666666');
 
-        // GITHUB PUSH & PULL SYNC SYSTEM
-        async pushToGithub() {
-          if (!this.githubToken) {
-            this.showGithubModal = true;
-            this.flashStatus('Please enter your GitHub Personal Access Token.');
-            return;
-          }
+          if (this.chartInstance) this.chartInstance.destroy();
 
-          this.syncingGithub = true;
-          this.flashStatus('Pushing data to GitHub...');
-
-          const payload = {
-            description: 'Saturn Tracker Backup',
-            public: false,
-            files: {
-              'saturn_purchases.json': {
-                content: JSON.stringify({
-                  purchases: this.purchases,
-                  exchangeRates: this.exchangeRates,
-                  updatedAt: new Date().toISOString()
-                }, null, 2)
-              }
-            }
-          };
-
-          try {
-            let url = 'https://api.github.com/gists';
-            let method = 'POST';
-
-            if (this.githubGistId) {
-              url += '/' + this.githubGistId;
-              method = 'PATCH';
-            }
-
-            const res = await fetch(url, {
-              method: method,
-              headers: {
-                'Authorization': `token ${this.githubToken}`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify(payload)
-            });
-
-            if (!res.ok) throw new Error(`GitHub API Error: ${res.statusText}`);
-
-            const data = await res.json();
-            if (data.id) {
-              this.githubGistId = data.id;
-              localStorage.setItem('saturn_gh_gist_id', data.id);
-            }
-
-            this.flashStatus('Successfully pushed purchase data to GitHub!');
-          } catch (err) {
-            alert('Push failed: ' + err.message);
-            this.flashStatus('Push failed: ' + err.message);
-          } finally {
-            this.syncingGithub = false;
-          }
-        },
-
-        async pullFromGithub() {
-          if (!this.githubToken || !this.githubGistId) {
-            this.showGithubModal = true;
-            this.flashStatus('Provide your GitHub Token and Gist ID to pull data.');
-            return;
-          }
-
-          this.syncingGithub = true;
-          this.flashStatus('Pulling latest data from GitHub...');
-
-          try {
-            const res = await fetch(`https://api.github.com/gists/${this.githubGistId}`, {
-              headers: {
-                'Authorization': `token ${this.githubToken}`
-              }
-            });
-
-            if (!res.ok) throw new Error(`GitHub API Error: ${res.statusText}`);
-
-            const data = await res.json();
-            const fileObj = data.files['saturn_purchases.json'];
-
-            if (!fileObj || !fileObj.content) {
-              throw new Error('saturn_purchases.json not found in this Gist.');
-            }
-
-            const parsed = JSON.parse(fileObj.content);
-            if (parsed.purchases) {
-              this.purchases = parsed.purchases;
-              if (parsed.exchangeRates) this.exchangeRates = parsed.exchangeRates;
-
-              this.saveLocalPurchases();
-              this.saveLocalSettings();
-              this.flashStatus('Data pulled from GitHub & auto-saved locally!');
-              this.renderIcons();
-            }
-          } catch (err) {
-            alert('Pull failed: ' + err.message);
-            this.flashStatus('Pull failed: ' + err.message);
-          } finally {
-            this.syncingGithub = false;
-          }
-        },
-
-        flashStatus(msg) {
-          this.syncStatus = msg;
-          this.renderIcons();
-          setTimeout(() => {
-            if (this.syncStatus === msg) this.syncStatus = '';
-          }, 4000);
-        },
-
-        // EXPORT FUNCTIONS
-        exportCSV() {
-          const headers = ['ID', 'Item Name', 'Category', 'Quantity', 'Price Per Unit', 'Original Currency', 'Store', 'Date', 'Converted Total (' + this.displayCurrency + ')', 'Notes'];
-          const rows = this.filteredPurchases.map(p => [
-            p.id,
-            `"${p.name.replace(/"/g, '""')}"`,
-            p.category,
-            p.quantity,
-            p.pricePerUnit,
-            p.originalCurrency,
-            `"${(p.store || '').replace(/"/g, '""')}"`,
-            p.date,
-            this.convertAmount(p.quantity * p.pricePerUnit, p.originalCurrency, this.displayCurrency).toFixed(2),
-            `"${(p.notes || '').replace(/"/g, '""')}"`
-          ]);
-
-          const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-          const encodedUri = encodeURI(csvContent);
-          const link = document.createElement('a');
-          link.setAttribute('href', encodedUri);
-          link.setAttribute('download', `saturn_purchases_${new Date().toISOString().slice(0, 10)}.csv`);
-          document.body.appendChild(link);
-          link.click();
-          link.remove();
-        },
-
-        triggerPrintReport() {
-          window.print();
-        },
-
-        // CHART VISUALIZATION
-        initChart() {
-          const canvas = document.getElementById('categoryChart');
-          if (!canvas) return;
-
-          const ctx = canvas.getContext('2d');
           this.chartInstance = new Chart(ctx, {
             type: 'doughnut',
             data: {
-              labels: [],
+              labels: activeCategories,
               datasets: [{
-                data: [],
-                backgroundColor: [],
+                data: dataValues,
+                backgroundColor: bgColors,
                 borderColor: '#1A1612',
                 borderWidth: 2
               }]
@@ -1249,35 +1008,109 @@
               responsive: true,
               maintainAspectRatio: false,
               plugins: {
-                legend: {
-                  position: 'bottom',
-                  labels: { color: '#D4C4A8', font: { size: 10, family: 'monospace' } }
-                }
+                legend: { display: false }
               }
             }
           });
-          this.updateChart();
         },
 
-        updateChart() {
-          if (!this.chartInstance) return;
-
-          const catData = {};
-          this.purchases.forEach(p => {
-            const conv = this.convertAmount(p.quantity * p.pricePerUnit, p.originalCurrency, this.displayCurrency);
-            catData[p.category] = (catData[p.category] || 0) + conv;
+        // Export & GitHub Sync Functions
+        exportCSV() {
+          let csv = 'Item,Category,Store,Quantity,PricePerUnit,Currency,Date,Notes\n';
+          this.filteredPurchases.forEach(i => {
+            csv += `"${i.name}","${i.category}","${i.store || ''}",${i.quantity},${i.pricePerUnit},"${i.originalCurrency}","${i.date}","${i.notes || ''}"\n`;
           });
+          const blob = new Blob([csv], { type: 'text/csv' });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `saturn_purchases_${new Date().toISOString().split('T')[0]}.csv`;
+          a.click();
+        },
 
-          const labels = Object.keys(catData);
-          const data = Object.values(catData);
-          const bgColors = labels.map(c => this.categoryColors[c] || '#666666');
+        triggerPrintReport() {
+          window.print();
+        },
 
-          this.chartInstance.data.labels = labels;
-          this.chartInstance.data.datasets[0].data = data;
-          this.chartInstance.data.datasets[0].backgroundColor = bgColors;
-          this.chartInstance.update();
+        showNotification(msg) {
+          this.syncStatus = msg;
+          setTimeout(() => this.syncStatus = '', 3000);
+        },
+
+        async pushToGithub() {
+          if (!this.githubConfig.token || !this.githubConfig.repo) {
+            alert('Please configure GitHub API settings first!');
+            this.showGithubModal = true;
+            return;
+          }
+          this.syncingGithub = true;
+          this.showNotification('Syncing data with GitHub...');
+
+          try {
+            const url = `https://api.github.com/repos/${this.githubConfig.repo}/contents/${this.githubConfig.path}`;
+            let sha = '';
+            
+            // Check existing file SHA
+            const checkRes = await fetch(url, { headers: { 'Authorization': `token ${this.githubConfig.token}` } });
+            if (checkRes.ok) {
+              const fileData = await checkRes.json();
+              sha = fileData.sha;
+            }
+
+            const content = btoa(unescape(encodeURIComponent(JSON.stringify(this.purchases, null, 2))));
+            const pushRes = await fetch(url, {
+              method: 'PUT',
+              headers: {
+                'Authorization': `token ${this.githubConfig.token}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                message: `Update purchase records [Saturn UI]`,
+                content: content,
+                sha: sha || undefined
+              })
+            });
+
+            if (pushRes.ok) {
+              this.showNotification('Successfully pushed to GitHub!');
+            } else {
+              throw new Error('Failed to push to GitHub');
+            }
+          } catch (err) {
+            alert('GitHub Sync Error: ' + err.message);
+          } finally {
+            this.syncingGithub = false;
+          }
+        },
+
+        async pullFromGithub() {
+          if (!this.githubConfig.token || !this.githubConfig.repo) {
+            alert('Please configure GitHub API settings first!');
+            this.showGithubModal = true;
+            return;
+          }
+          this.syncingGithub = true;
+          this.showNotification('Pulling data from GitHub...');
+
+          try {
+            const url = `https://api.github.com/repos/${this.githubConfig.repo}/contents/${this.githubConfig.path}`;
+            const res = await fetch(url, { headers: { 'Authorization': `token ${this.githubConfig.token}` } });
+            
+            if (res.ok) {
+              const fileData = await res.json();
+              const decodedContent = decodeURIComponent(escape(atob(fileData.content)));
+              this.purchases = JSON.parse(decodedContent);
+              this.showNotification('Data successfully synced from GitHub!');
+            } else {
+              throw new Error('Failed to pull from GitHub repository');
+            }
+          } catch (err) {
+            alert('GitHub Sync Error: ' + err.message);
+          } finally {
+            this.syncingGithub = false;
+          }
         }
-      };
+      }
     }
   </script>
 </body>
