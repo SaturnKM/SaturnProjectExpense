@@ -1,5 +1,44 @@
 [
   {
+    "id": 1788363715323,
+    "name": "SK8",
+    "category": "Hardware",
+    "store": "",
+    "quantity": 8,
+    "pricePerUnit": 350,
+    "originalCurrency": "DZD",
+    "date": "2026-09-02",
+    "url": "",
+    "image": "",
+    "notes": ""
+  },
+  {
+    "id": 1788363479171,
+    "name": "8mm pulley 20 tooth 8mm for 6mm belt",
+    "category": "Hardware",
+    "store": "",
+    "quantity": 10,
+    "pricePerUnit": 350,
+    "originalCurrency": "DZD",
+    "date": "2026-09-02",
+    "url": "",
+    "image": "",
+    "notes": "2 of them are used because there is no idel ones"
+  },
+  {
+    "id": 1788363417299,
+    "name": "gt2 timing belt 5m",
+    "category": "Hardware",
+    "store": "",
+    "quantity": 1,
+    "pricePerUnit": 2500,
+    "originalCurrency": "DZD",
+    "date": "2026-09-02",
+    "url": "",
+    "image": "",
+    "notes": ""
+  },
+  {
     "id": 1788357906890,
     "name": "8mm smooth bars 1meter",
     "category": "Hardware",
